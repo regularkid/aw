@@ -3,7 +3,7 @@ Micro Framework for HTML5 Games
 
 Inspried / influenced by the awesome Ga engine (https://github.com/kittykatattack/ga), I thought it would be fun to take my own stab at making a micro framework for HTML5 games! I'll be using this for the 2018 js13kgames competition (http://js13kgames.com/).
 
-##Features:
+## Features:
 + Asset loader
 + Game loop
 + State system
@@ -14,7 +14,7 @@ Inspried / influenced by the awesome Ga engine (https://github.com/kittykatattac
 + ~300 lines of code
 + ~2kb minified and zipped
 
-##Micro Tutorial
+## Micro Tutorial
 1. Grab aw.js and plop that bad boy into your project.
 2. Add a single line of code to start it up: `var aw = new Aw(screenWidth, screenHeight, screenScale, assetList);`
 
