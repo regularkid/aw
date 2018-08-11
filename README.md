@@ -24,7 +24,7 @@ Example:
 var aw = new Aw(320, 240, 2.0, ["star.png", "boing.wav"]);
 ```
 
-3. Create an update function that will be called every frame:
+4. Create an update function that will be called every frame:
 ```javascript
 aw.state = myUpdate;
 function myUpdate(deltaTime)
@@ -33,7 +33,7 @@ function myUpdate(deltaTime)
 }
 ```
 
-4. Check out the example code (everything in this repository that isn't aw.js) to see how to:
+5. Check out the example code (everything in this repository that isn't aw.js) to see how to:
 + Check for input
 + Change states
 + Draw sprites and text
