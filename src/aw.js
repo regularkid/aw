@@ -104,6 +104,7 @@ class Aw
     {
         this.entities = [];
         this.entitiesNeedSorting = false;
+        this.entitiesNeedRemoval = false;
     }
 
     addEntity(entity)
@@ -117,7 +118,7 @@ class Aw
             },
             get: () => { return entity._z; }
         });
-        entity.z = 0;
+        entity._z = this.entities.length > 0 ? this.entities[this.entities.length - 1].z + 1 : 0;
 
         this.entities.push(entity);
     }
@@ -125,6 +126,7 @@ class Aw
     removeEntity(entity)
     {
         entity._remove = true;
+        this.entitiesNeedRemoval = true;
     }
 
     updateEntities(deltaTime)
@@ -134,7 +136,11 @@ class Aw
             if (entity.update !== undefined) { entity.update(deltaTime); }
         });
 
-        this.entities = this.entities.filter(entity => entity._remove !== true);
+        if (this.entitiesNeedRemoval)
+        {
+            this.entities = this.entities.filter(entity => entity._remove !== true);
+            this.entitiesNeedRemoval = false;
+        }
     }
 
     renderEntities()
@@ -149,12 +155,8 @@ class Aw
     {
         if (this.entitiesNeedSorting)
         {
-            this.entities.sort((entity1, entity2) =>
-            {
-                // Higher values update/render later than lower values
-                return entity1._z - entity2._z;
-            });
-
+            // Higher values update/render later than lower values
+            this.entities.sort((entity1, entity2) => entity1.z - entity2.z);
             this.entitiesNeedSorting = false;
         }
     }
