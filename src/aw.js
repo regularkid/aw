@@ -214,6 +214,8 @@ class Aw
 
     initAudio()
     {
+        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
         this.notes =
         {
             "c": 16.35,
@@ -245,8 +247,7 @@ class Aw
 
     playNote(note, octave, length)
     {
-        let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let oscillator = audioCtx.createOscillator();
+        let oscillator = this.audioCtx.createOscillator();
         let noteFrequency = this.notes[note.toLowerCase()];
         if (octave !== undefined)
         {
@@ -254,11 +255,11 @@ class Aw
         }
 
         oscillator.type = "triangle";
-        oscillator.frequency.setValueAtTime(noteFrequency, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(noteFrequency, this.audioCtx.currentTime);
         
-        oscillator.connect(audioCtx.destination);
+        oscillator.connect(this.audioCtx.destination);
         oscillator.start();
-        oscillator.stop(audioCtx.currentTime + (length !== undefined ? length : 1.0));  
+        oscillator.stop(this.audioCtx.currentTime + (length !== undefined ? length : 0.2));  
     }
 
     ///////////////////////////
