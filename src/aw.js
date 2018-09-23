@@ -24,7 +24,6 @@ class Aw
         this.canvas.style.width = `${width * scale}px`;
         this.canvas.style.height = `${height * scale}px`;
         this.canvas.style.backgroundColor = "black";
-        this.canvas.style["image-rendering"] = "pixelated";
         document.getElementById("game").appendChild(this.canvas);
 
         this.ctx = this.canvas.getContext('2d');
@@ -51,7 +50,6 @@ class Aw
             else if (assetName.endsWith(".wav") || assetName.endsWith(".mp3"))
             {
                 this.assets[assetName].data = new Audio();
-                //this.assets[assetName].data.addEventListener("load", () => this.assets[assetName].loaded = true, true);
                 this.assets[assetName].data.src = assetName;
                 this.assets[assetName].data.load();
                 this.assets[assetName].loaded = true;
@@ -93,6 +91,11 @@ class Aw
         this.sortEntities();
         this.updateEntities(deltaTime);
         this.renderEntities();
+
+        if (this.statePost !== undefined)
+        {
+            this.statePost(deltaTime);
+        }
 
         this.postUpdateInput();
     }
@@ -214,27 +217,39 @@ class Aw
 
     initAudio()
     {
-        this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        this.soundOn = true;
 
         this.notes =
         {
-            "c": 16.35,
-            "c#": 17.32,
-            "d": 18.35,
-            "d#": 19.45,
-            "e": 20.60,
-            "f": 21.83,
-            "f#": 23.12,
-            "g": 24.50,
-            "g#": 25.96,
-            "a": 27.50,
-            "a#": 29.14,
-            "b": 30.87,
+            "c": 16.35, "c#": 17.32, "d": 18.35, "d#": 19.45, "e": 20.60, "f": 21.83,
+            "f#": 23.12, "g": 24.50, "g#": 25.96, "a": 27.50, "a#": 29.14, "b": 30.87,
+        }
+
+        window.addEventListener('click', () =>
+        {
+            this.createAudioContext();
+        });
+    }
+
+    createAudioContext()
+    {
+        if (!this.audioCtx)
+        {
+            this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        else
+        {
+            this.audioCtx.resume();
         }
     }
 
     playAudio(name, loop)
     {
+        if (!this.soundOn || !this.audioCtx)
+        {
+            return;
+        }
+
         this.getAsset(name).loop = loop !== undefined ? loop : false;
         this.getAsset(name).play();
     }
@@ -245,8 +260,13 @@ class Aw
         this.getAsset(name).currentTime = 0;
     }
 
-    playNote(note, octave, length)
+    playNote(note, octave, length, delay, type)
     {
+        if (!this.soundOn || !this.audioCtx)
+        {
+            return;
+        }
+
         let oscillator = this.audioCtx.createOscillator();
         let noteFrequency = this.notes[note.toLowerCase()];
         if (octave !== undefined)
@@ -254,12 +274,12 @@ class Aw
             noteFrequency *= Math.pow(2, octave);
         }
 
-        oscillator.type = "triangle";
+        oscillator.type = type !== undefined ? type : "sine";
         oscillator.frequency.setValueAtTime(noteFrequency, this.audioCtx.currentTime);
         
         oscillator.connect(this.audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(this.audioCtx.currentTime + (length !== undefined ? length : 0.2));  
+        oscillator.start(this.audioCtx.currentTime + (delay !== undefined ? delay : 0));
+        oscillator.stop(this.audioCtx.currentTime + (delay !== undefined ? delay : 0) + (length !== undefined ? length : 0.2));
     }
 
     ///////////////////////////
@@ -270,69 +290,44 @@ class Aw
     {
         this.mousePos = {x: 0, y: 0};
         this.mouseDelta = {x: 0, y: 0};
-        this.mouseLeftButton = false;
-        this.mouseRightButton = false;
-        this.mouseLeftButtonJustPressed = false;
-        this.mouseRightButtonJustPressed = false;
+        this.mouseButtons = {};
+        this.mouseButtonsJustPressed = {};
+        this.keys = {};
+        this.keysJustPressed = {};
 
         window.addEventListener("mousemove", e =>
         {
             this.mouseDelta.x += e.movementX;
             this.mouseDelta.y += e.movementY;
-            this.mousePos = {x: e.clientX, y: e.clientY};
+
+            var rect = this.canvas.getBoundingClientRect();
+            this.mousePos = {x: e.clientX - rect.left, y: e.clientY - rect.top};
         });
 
-        window.addEventListener("mousedown", e =>
-        {
-            if (e.button === 0) { this.mouseLeftButton = true; this.mouseLeftButtonJustPressed = true; }
-            else if (e.button === 2) { this.mouseRightButton = true; this.mouseRightButtonJustPressed = true; }
-        });
+        window.addEventListener("mousedown", e => this.setMouseButtonState(e, true));
+        window.addEventListener("mouseup", e => this.setMouseButtonState(e, false));
+        window.addEventListener("contextmenu", e => e.preventDefault());
 
-        window.addEventListener("mouseup", e =>
-        {
-            if (e.button === 0) { this.mouseLeftButton = false; }
-            else if (e.button === 2) { this.mouseRightButton = false; }
-        });
+        window.addEventListener("keydown", e => this.setKeyState(e, true));
+        window.addEventListener("keyup", e => this.setKeyState(e, false));
+    }
 
-        this.keyToName =
-        {
-            "a": "a", "b": "b", "c": "c", "d": "d", "e": "e", "f": "f", "g": "g", "h": "h", "i": "i",
-            "j": "j", "k": "k", "l": "l", "m": "m", "n": "n", "o": "o", "p": "p", "q": "q", "r": "r",
-            "s": "s", "t": "t", "u": "u", "v": "v", "w": "w", "x": "x", "y": "y", "z": "z",
-            "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine",
-            "arrowup": "up", "arrowdown": "down", "arrowleft": "left", "arrowright": "right", " ": "space", "escape": "escape",
-            "control": "ctrl", "shift": "shift", "alt": "alt", "tab": "tab", "enter": "enter", "backspace": "backspace"
-        };
-
-        this.keys = {};
-        this.keysJustPressed = {};
-        Object.keys(this.keyToName).forEach(key => this.keys[key] = false);
-
-        window.addEventListener("keydown", e =>
-        {
-            this.setKeyState(e, true);
-        });
-
-        window.addEventListener("keyup", e =>
-        {
-            this.setKeyState(e, false);
-        });
+    setMouseButtonState(event, isOn)
+    {
+        this.mouseButtonsJustPressed[event.button] = isOn && (this.mouseButtons[event.button] === false || this.mouseButtons[event.button] === undefined);
+        this.mouseButtons[event.button] = isOn;
     }
 
     setKeyState(event, isOn)
     {
-        let keyCode = event.key.toLowerCase();
-        if (this.keyToName[keyCode] !== undefined)
+        let keyName = event.key.toLowerCase();
+        this.keysJustPressed[keyName] = isOn && (this.keys[keyName] === false || this.keys[keyName] === undefined);
+        this.keys[keyName] = isOn;
+        
+        // Hack: prevent arrow keys from scrolling the page
+        if (keyName === "arrowup" || keyName === "arrowdown" || keyName === "arrowleft" || keyName === "arrowright")
         {
-            let keyName = this.keyToName[keyCode];
-            this.keysJustPressed[keyName] = this.keys[keyName] === false || this.keys[keyName] === undefined;
-            this.keys[keyName] = isOn;
-            
-            // Hack: prevent arrow keys from scrolling the page
-            if (keyName === "up" || keyName === "down" || keyName === "left" || keyName === "right")
-            {
-                event.preventDefault();
-            }
+            event.preventDefault();
         }
     }
 
@@ -342,6 +337,11 @@ class Aw
         this.mouseDelta.y = 0.0;
         this.mouseLeftButtonJustPressed = false;
         this.mouseRightButtonJustPressed = false;
+
+        Object.keys(this.mouseButtonsJustPressed).forEach(key =>
+        {
+            this.mouseButtonsJustPressed[key] = false;
+        });
 
         Object.keys(this.keysJustPressed).forEach(key =>
         {

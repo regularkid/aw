@@ -12,37 +12,37 @@ function enterTextState()
 function textState(deltaTime)
 {
     // Test switching states when you press 's'
-    if (aw.keysJustPressed.s)
+    if (aw.keysJustPressed["s"])
     {
         enterStarState();
     }
 
     // Test moving the text using the arrow keys
     let speedPerSec = 50;
-    if (aw.keys.left)
+    if (aw.keys["arrowleft"])
     {
         textX -= speedPerSec * deltaTime;
     }
-    if (aw.keys.right)
+    if (aw.keys["arrowright"])
     {
         textX += speedPerSec * deltaTime;
     }
-    if (aw.keys.up)
+    if (aw.keys["arrowup"])
     {
         textY -= speedPerSec * deltaTime;
     }
-    if (aw.keys.down)
+    if (aw.keys["arrowdown"])
     {
         textY += speedPerSec * deltaTime;
     }
 
     // Test rotating the text using 'z' / 'x'
     let rotationPerSec = 180;
-    if (aw.keys.x)
+    if (aw.mouseButtons[0])
     {
         textAngle += rotationPerSec * deltaTime;
     }
-    if (aw.keys.z)
+    if (aw.mouseButtons[2])
     {
         textAngle -= rotationPerSec * deltaTime;
     }
