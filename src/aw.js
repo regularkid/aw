@@ -10,6 +10,7 @@ class Aw
         this.initEntities();
         this.initInput();
         this.initAudio();
+        this.initEvents();
 
         this.loadAssets(assetList);
 
@@ -374,5 +375,43 @@ class Aw
         {
             this.keysJustPressed[key] = false;
         });
+    }
+
+    //////////////////////////
+    //------- EVENTS -------//
+    //////////////////////////
+
+    initEvents()
+    {
+        this.events = {};
+    }
+
+    addEventListener(eventName, handler)
+    {
+        if (this.events[eventName] === undefined)
+        {
+            this.events[eventName] = [];
+        }
+
+        this.events[eventName].push(handler);
+    }
+
+    removeEventListener(eventName, handler)
+    {
+        if (this.events[eventName] !== undefined)
+        {
+            this.events[eventName] = this.events[eventName].filter(existingHandler => existingHandler !== handler);
+        }
+    }
+
+    broadcastEvent(eventName)
+    {
+        if (this.events[eventName] !== undefined)
+        {
+            // Pass along agruments (minus the event name param)
+            var eventArgs = Array.from(arguments);
+            eventArgs.shift();
+            this.events[eventName].forEach(handler => handler[`on${eventName}`].apply(handler, eventArgs));
+        }
     }
 }

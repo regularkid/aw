@@ -6,6 +6,15 @@ class StarState
 
         this.stars = [];
         this.addStar();
+
+        aw.addEventListener("MyEvent1", this);
+        aw.addEventListener("MyEvent2", this);
+    }
+
+    exit()
+    {
+        aw.removeEventListener("MyEvent1", this);
+        aw.removeEventListener("MyEvent2", this);
     }
 
     addStar()
@@ -30,6 +39,16 @@ class StarState
         if (aw.keysJustPressed["a"])
         {
             aw.playAudio("boing.wav");
+        }
+
+        // Test event handling when you press 'e' / 'r'
+        if (aw.keysJustPressed["e"])
+        {
+            aw.broadcastEvent("MyEvent1", 1234);
+        }
+        else if (aw.keysJustPressed["r"])
+        {
+            aw.broadcastEvent("MyEvent2", "Test Arg", 500);
         }
 
         // Test adding or removing stars when you press 'space' / 'backspace'
@@ -63,5 +82,15 @@ class StarState
         {
             aw.switchState(new TextState());
         }
+    }
+
+    onMyEvent1(value)
+    {
+        console.log(`Event handler #1: ${value}`);
+    }
+
+    onMyEvent2(str, num)
+    {
+        console.log(`Event handler #2: ${str} - ${num}`);
     }
 }
