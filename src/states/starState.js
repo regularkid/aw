@@ -66,7 +66,7 @@ class StarState
         {
             this.stars.forEach((entity, index) =>
             {
-                entity.z = stars.length - index;
+                entity.z = this.stars.length - index;
             });
         }
         else if (aw.keysJustPressed["arrowdown"])
