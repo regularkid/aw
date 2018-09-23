@@ -4,4 +4,4 @@ var screenScale = 2.0;
 
 var aw = new Aw(screenWidth, screenHeight, screenScale, ["star.png", "boing.wav"]);
 
-enterStarState();
+aw.switchState(new StarState());

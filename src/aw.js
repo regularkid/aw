@@ -83,21 +83,48 @@ class Aw
 
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        if (this.state !== undefined)
-        {
-            this.state(deltaTime);
-        }
-
+        this.preUpdateState(deltaTime);
         this.sortEntities();
         this.updateEntities(deltaTime);
         this.renderEntities();
+        this.postUpdateState(deltaTime);
+        this.postUpdateInput();
+    }
 
-        if (this.statePost !== undefined)
+    switchState(nextState)
+    {
+        this.nextState = nextState;
+    }
+
+    preUpdateState(deltaTime)
+    {
+        if (this.nextState !== undefined)
         {
-            this.statePost(deltaTime);
+            this.callStateFunction("exit", deltaTime);
+
+            this.state = this.nextState;
+            this.nextState = undefined;
+
+            this.callStateFunction("enter", deltaTime);
         }
 
-        this.postUpdateInput();
+        this.callStateFunction("preUpdate", deltaTime);
+    }
+
+    postUpdateState(deltaTime)
+    {
+        this.callStateFunction("postUpdate", deltaTime);
+    }
+
+    callStateFunction(funcName)
+    {
+        if (this.state !== undefined && this.state[funcName] !== undefined)
+        {
+            // Pass along agruments (minus the function name param)
+            var stateArgs = Array.from(arguments);
+            stateArgs.shift();
+            this.state[funcName].apply(this.state, stateArgs);
+        }
     }
 
     //////////////////////////
