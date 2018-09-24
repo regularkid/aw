@@ -11,6 +11,7 @@ class Aw
         this.initInput();
         this.initAudio();
         this.initEvents();
+        this.initCameras();
 
         this.loadAssets(assetList);
 
@@ -82,17 +83,26 @@ class Aw
         let deltaTime = Math.min((curTime - (this.lastTime || curTime)) / 1000.0, 0.2);  // Cap to 200ms (5fps)
         this.lastTime = curTime;
 
+        this.performStateSwitch();
+
+        // Update
+        this.callStateFunction("preUpdate", deltaTime);
+        this.sortEntities();
+        this.updateEntities(deltaTime);
+        this.callStateFunction("postUpdate", deltaTime);
+        this.updateCameras(deltaTime);
+        this.postUpdateInput();
+
+        // Clear canvas
         this.ctx.save();
         this.ctx.setTransform(1, 0, 0, 1, 0, 0);
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.ctx.restore();
 
-        this.preUpdateState(deltaTime);
-        this.sortEntities();
-        this.updateEntities(deltaTime);
+        // Render
+        this.callStateFunction("preRender");
         this.renderEntities();
-        this.postUpdateState(deltaTime);
-        this.postUpdateInput();
+        this.callStateFunction("postRender");
     }
 
     switchState(nextState)
@@ -100,24 +110,17 @@ class Aw
         this.nextState = nextState;
     }
 
-    preUpdateState(deltaTime)
+    performStateSwitch()
     {
         if (this.nextState !== undefined)
         {
-            this.callStateFunction("exit", deltaTime);
+            this.callStateFunction("exit");
 
             this.state = this.nextState;
             this.nextState = undefined;
 
-            this.callStateFunction("enter", deltaTime);
+            this.callStateFunction("enter");
         }
-
-        this.callStateFunction("preUpdate", deltaTime);
-    }
-
-    postUpdateState(deltaTime)
-    {
-        this.callStateFunction("postUpdate", deltaTime);
     }
 
     callStateFunction(funcName)
@@ -256,10 +259,7 @@ class Aw
             "f#": 23.12, "g": 24.50, "g#": 25.96, "a": 27.50, "a#": 29.14, "b": 30.87,
         }
 
-        window.addEventListener('click', () =>
-        {
-            this.createAudioContext();
-        });
+        window.addEventListener('click', () => this.createAudioContext());
     }
 
     createAudioContext()
@@ -338,7 +338,6 @@ class Aw
         window.addEventListener("mousedown", e => this.setMouseButtonState(e, true));
         window.addEventListener("mouseup", e => this.setMouseButtonState(e, false));
         window.addEventListener("contextmenu", e => e.preventDefault());
-
         window.addEventListener("keydown", e => this.setKeyState(e, true));
         window.addEventListener("keyup", e => this.setKeyState(e, false));
     }
@@ -369,15 +368,8 @@ class Aw
         this.mouseLeftButtonJustPressed = false;
         this.mouseRightButtonJustPressed = false;
 
-        Object.keys(this.mouseButtonsJustPressed).forEach(key =>
-        {
-            this.mouseButtonsJustPressed[key] = false;
-        });
-
-        Object.keys(this.keysJustPressed).forEach(key =>
-        {
-            this.keysJustPressed[key] = false;
-        });
+        Object.keys(this.mouseButtonsJustPressed).forEach(key => this.mouseButtonsJustPressed[key] = false);
+        Object.keys(this.keysJustPressed).forEach(key => this.keysJustPressed[key] = false);
     }
 
     //////////////////////////
@@ -409,12 +401,98 @@ class Aw
 
     broadcastEvent(eventName)
     {
-        if (this.events[eventName] !== undefined)
+        let event = this.events[eventName];
+        if (event !== undefined)
         {
             // Pass along agruments (minus the event name param)
             var eventArgs = Array.from(arguments);
             eventArgs.shift();
-            this.events[eventName].forEach(handler => handler[`on${eventName}`].apply(handler, eventArgs));
+            event.forEach(handler => handler[`on${eventName}`].apply(handler, eventArgs));
+        }
+    }
+
+    //////////////////////////
+    //------- CAMERA -------//
+    //////////////////////////
+    initCameras()
+    {
+        this.cameras = {};
+    }
+
+    createCamera(cameraName, x, y, xScale, yScale, angle)
+    {
+        if (this.cameras[cameraName] === undefined)
+        {
+            this.cameras[cameraName] = {};
+        }
+
+        let camera = this.cameras[cameraName];
+        camera.x = x !== undefined ? x : 0;
+        camera.y = y !== undefined ? y : 0;
+        camera.xCur = camera.x;
+        camera.yCur = camera.y;
+        camera.xScale = xScale !== undefined ? xScale : 1;
+        camera.yScale = yScale !== undefined ? yScale : 1;
+        camera.angle = angle !== undefined ? angle : 0;
+        camera.shakeAmount = 0;
+        camera.shakeTime = 0;
+        camera.shakeTimeCur = 0;
+    }
+
+    getCamera(cameraName)
+    {
+        return this.cameras[cameraName];
+    }
+
+    setCamera(cameraName)
+    {
+        let camera = this.cameras[cameraName];
+        if (camera !== undefined)
+        {
+            this.curCamera = camera;
+            this.setCameraTransform(camera);
+        }
+    }
+
+    setCameraTransform(camera)
+    {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.translate(-camera.xCur, -camera.yCur);
+        this.ctx.scale(camera.xScale, camera.yScale);
+        this.ctx.rotate(camera.angle * Math.PI/180);
+    }
+
+    updateCameras(deltaTime)
+    {
+        Object.values(this.cameras).forEach(camera =>
+        {
+            camera.xCur = camera.x;
+            camera.yCur = camera.y;
+
+            if (camera.shakeTimeCur > 0)
+            {
+                camera.shakeTimeCur = Math.max(camera.shakeTimeCur - deltaTime, 0);
+                let shakeAmountCur = (camera.shakeTimeCur / camera.shakeTime) * camera.shakeAmount;
+
+                camera.xCur += -shakeAmountCur + shakeAmountCur*Math.random()*2;
+                camera.yCur += -shakeAmountCur + shakeAmountCur*Math.random()*2;
+            }
+
+            if (this.curCamera === camera)
+            {
+                this.setCameraTransform(camera);
+            }
+        });
+    }
+
+    startCameraShake(cameraName, shakeAmount, shakeTime)
+    {
+        let camera = this.cameras[cameraName];
+        if (camera !== undefined)
+        {
+            camera.shakeAmount = shakeAmount;
+            camera.shakeTime = shakeTime;
+            camera.shakeTimeCur = shakeTime;
         }
     }
 }

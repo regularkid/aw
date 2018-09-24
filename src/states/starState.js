@@ -9,6 +9,9 @@ class StarState
 
         aw.addEventListener("MyEvent1", this);
         aw.addEventListener("MyEvent2", this);
+
+        aw.createCamera("game", 0, 0);
+        aw.setCamera("game");
     }
 
     exit()
@@ -75,6 +78,24 @@ class StarState
             {
                 entity.z = index;
             });
+        }
+
+        // Test moving the camera when you press 'left' / 'right'
+        let gameCamera = aw.getCamera("game");
+        let speedPerSec = 50;
+        if (aw.keys["arrowleft"])
+        {
+            gameCamera.x -= speedPerSec * deltaTime;
+        }
+        if (aw.keys["arrowright"])
+        {
+            gameCamera.x += speedPerSec * deltaTime;
+        }
+
+        // Test screen shake when you press 't'
+        if (aw.keysJustPressed["t"])
+        {
+            aw.startCameraShake("game", 5.0, 2.0);
         }
 
         // Test switching states when you press 's'
