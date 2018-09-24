@@ -31,6 +31,8 @@ var aw = new Aw(320, 240, 2.0, ["star.png", "boing.wav"]);
 class MyState
 {
     // Optional functions:
+    enter() {}
+    exit() {}
     preUpdate(deltaTime) {}
     postUpdate(deltaTime) {}
     preRender() {}
